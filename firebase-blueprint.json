@@ -1,0 +1,230 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile document storing authentication credentials and account metadata",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Firebase Auth UID of the user",
+          "maxLength": 128
+        },
+        "email": {
+          "type": "string",
+          "description": "User Google email address",
+          "maxLength": 256
+        },
+        "displayName": {
+          "type": "string",
+          "description": "User display name",
+          "maxLength": 128
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "User Google profile avatar URL",
+          "maxLength": 1024
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when user profile was created",
+          "maxLength": 64
+        },
+        "lastLoginAt": {
+          "type": "string",
+          "description": "Timestamp of most recent authentication",
+          "maxLength": 64
+        }
+      },
+      "required": ["uid", "email", "createdAt"]
+    },
+    "SavedVideo": {
+      "title": "SavedVideo",
+      "description": "Veo 3 generated video record associated with the user",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique video record ID",
+          "maxLength": 128
+        },
+        "userId": {
+          "type": "string",
+          "description": "Owner UID",
+          "maxLength": 128
+        },
+        "prompt": {
+          "type": "string",
+          "description": "Prompt text used for video diffusion generation",
+          "maxLength": 2048
+        },
+        "aspectRatio": {
+          "type": "string",
+          "description": "Aspect ratio (16:9 or 9:16)",
+          "enum": ["16:9", "9:16"]
+        },
+        "resolution": {
+          "type": "string",
+          "description": "Video resolution (720p or 1080p)",
+          "enum": ["720p", "1080p"]
+        },
+        "status": {
+          "type": "string",
+          "description": "Generation status",
+          "enum": ["initializing", "processing", "completed", "failed"]
+        },
+        "operationName": {
+          "type": "string",
+          "description": "Cloud operation identifier",
+          "maxLength": 512
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Creation timestamp",
+          "maxLength": 64
+        }
+      },
+      "required": ["id", "userId", "prompt", "aspectRatio", "status", "createdAt"]
+    },
+    "ArchitecturePlan": {
+      "title": "ArchitecturePlan",
+      "description": "Saved AI cloud infrastructure recommendation",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique plan ID",
+          "maxLength": 128
+        },
+        "userId": {
+          "type": "string",
+          "description": "Owner UID",
+          "maxLength": 128
+        },
+        "workloadType": {
+          "type": "string",
+          "description": "Type of AI model workload",
+          "maxLength": 256
+        },
+        "modelSize": {
+          "type": "string",
+          "description": "Model parameter scale",
+          "maxLength": 256
+        },
+        "computeCluster": {
+          "type": "string",
+          "description": "Recommended hardware accelerator description",
+          "maxLength": 1024
+        },
+        "scalingStrategy": {
+          "type": "string",
+          "description": "Autoscaling configuration description",
+          "maxLength": 1024
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Creation timestamp",
+          "maxLength": 64
+        }
+      },
+      "required": ["id", "userId", "workloadType", "createdAt"]
+    },
+    "SessionTelemetry": {
+      "title": "SessionTelemetry",
+      "description": "User session interaction history and event telemetry",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique session log identifier",
+          "maxLength": 128
+        },
+        "userId": {
+          "type": "string",
+          "description": "Owner UID",
+          "maxLength": 128
+        },
+        "sessionId": {
+          "type": "string",
+          "description": "Session UUID",
+          "maxLength": 128
+        },
+        "startedAt": {
+          "type": "string",
+          "description": "Session start timestamp",
+          "maxLength": 64
+        },
+        "totalInteractions": {
+          "type": "number",
+          "description": "Total count of recorded interactions in the session"
+        },
+        "lastUpdated": {
+          "type": "string",
+          "description": "Last update timestamp",
+          "maxLength": 64
+        }
+      },
+      "required": ["id", "userId", "sessionId", "startedAt", "lastUpdated"]
+    },
+    "VeoDraftConfig": {
+      "title": "VeoDraftConfig",
+      "description": "Auto-saved prompt and configuration draft for Veo 3 Video Generator",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique draft document ID",
+          "maxLength": 128
+        },
+        "userId": {
+          "type": "string",
+          "description": "Owner UID",
+          "maxLength": 128
+        },
+        "prompt": {
+          "type": "string",
+          "description": "Current prompt text for video generation",
+          "maxLength": 2048
+        },
+        "aspectRatio": {
+          "type": "string",
+          "description": "Aspect ratio (16:9 or 9:16)",
+          "enum": ["16:9", "9:16"]
+        },
+        "resolution": {
+          "type": "string",
+          "description": "Video resolution (720p or 1080p)",
+          "enum": ["720p", "1080p"]
+        },
+        "lastSavedAt": {
+          "type": "string",
+          "description": "Timestamp when draft was last auto-saved",
+          "maxLength": 64
+        }
+      },
+      "required": ["id", "userId", "prompt", "aspectRatio", "lastSavedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profile documents keyed by Firebase Auth UID"
+    },
+    "/users/{userId}/videos/{videoId}": {
+      "schema": "SavedVideo",
+      "description": "Veo 3 generated videos subcollection owned by the user"
+    },
+    "/users/{userId}/architecturePlans/{planId}": {
+      "schema": "ArchitecturePlan",
+      "description": "Saved cloud infrastructure plans subcollection owned by the user"
+    },
+    "/users/{userId}/sessionLogs/{logId}": {
+      "schema": "SessionTelemetry",
+      "description": "Saved session logs subcollection owned by the user"
+    },
+    "/users/{userId}/drafts/{draftId}": {
+      "schema": "VeoDraftConfig",
+      "description": "Auto-saved video generator prompt and configuration drafts owned by the user"
+    }
+  }
+}

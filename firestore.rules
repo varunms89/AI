@@ -1,0 +1,147 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default-deny catch-all rule
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Validation helper for UserProfile
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['uid', 'email', 'createdAt']) &&
+        data.uid is string && data.uid.size() <= 128 && data.uid == request.auth.uid &&
+        data.email is string && data.email.size() <= 256 &&
+        data.createdAt is string && data.createdAt.size() <= 64 &&
+        (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 128)) &&
+        (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 1024)) &&
+        (!('lastLoginAt' in data) || (data.lastLoginAt is string && data.lastLoginAt.size() <= 64));
+    }
+
+    // Validation helper for SavedVideo
+    function isValidSavedVideo(data) {
+      return data.keys().hasAll(['id', 'userId', 'prompt', 'aspectRatio', 'status', 'createdAt']) &&
+        data.id is string && data.id.size() <= 128 &&
+        data.userId is string && data.userId.size() <= 128 && data.userId == request.auth.uid &&
+        data.prompt is string && data.prompt.size() <= 2048 &&
+        data.aspectRatio in ['16:9', '9:16'] &&
+        data.status in ['initializing', 'processing', 'completed', 'failed'] &&
+        data.createdAt is string && data.createdAt.size() <= 64 &&
+        (!('resolution' in data) || data.resolution in ['720p', '1080p']) &&
+        (!('operationName' in data) || (data.operationName is string && data.operationName.size() <= 512));
+    }
+
+    // Validation helper for ArchitecturePlan
+    function isValidArchitecturePlan(data) {
+      return data.keys().hasAll(['id', 'userId', 'workloadType', 'createdAt']) &&
+        data.id is string && data.id.size() <= 128 &&
+        data.userId is string && data.userId.size() <= 128 && data.userId == request.auth.uid &&
+        data.workloadType is string && data.workloadType.size() <= 256 &&
+        data.createdAt is string && data.createdAt.size() <= 64 &&
+        (!('modelSize' in data) || (data.modelSize is string && data.modelSize.size() <= 256)) &&
+        (!('computeCluster' in data) || (data.computeCluster is string && data.computeCluster.size() <= 1024)) &&
+        (!('scalingStrategy' in data) || (data.scalingStrategy is string && data.scalingStrategy.size() <= 1024));
+    }
+
+    // Validation helper for SessionTelemetry
+    function isValidSessionTelemetry(data) {
+      return data.keys().hasAll(['id', 'userId', 'sessionId', 'startedAt', 'lastUpdated']) &&
+        data.id is string && data.id.size() <= 128 &&
+        data.userId is string && data.userId.size() <= 128 && data.userId == request.auth.uid &&
+        data.sessionId is string && data.sessionId.size() <= 128 &&
+        data.startedAt is string && data.startedAt.size() <= 64 &&
+        data.lastUpdated is string && data.lastUpdated.size() <= 64 &&
+        (!('totalInteractions' in data) || data.totalInteractions is number);
+    }
+
+    // Validation helper for VeoDraftConfig
+    function isValidVeoDraftConfig(data) {
+      return data.keys().hasAll(['id', 'userId', 'prompt', 'aspectRatio', 'lastSavedAt']) &&
+        data.id is string && data.id.size() <= 128 &&
+        data.userId is string && data.userId.size() <= 128 && data.userId == request.auth.uid &&
+        data.prompt is string && data.prompt.size() <= 2048 &&
+        data.aspectRatio in ['16:9', '9:16'] &&
+        data.lastSavedAt is string && data.lastSavedAt.size() <= 64 &&
+        (!('resolution' in data) || data.resolution in ['720p', '1080p']);
+    }
+
+    // User Profile Documents
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false; // Disallow querying all user accounts
+      allow create: if isOwner(userId) && isValidUserProfile(incoming());
+      allow update: if isOwner(userId) && isValidUserProfile(incoming()) &&
+        incoming().uid == existing().uid &&
+        incoming().createdAt == existing().createdAt;
+      allow delete: if false;
+
+      // Saved Videos subcollection
+      match /videos/{videoId} {
+        allow get: if isOwner(userId) && isValidId(videoId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(videoId) && isValidSavedVideo(incoming());
+        allow update: if isOwner(userId) && isValidId(videoId) && isValidSavedVideo(incoming()) &&
+          incoming().id == existing().id &&
+          incoming().userId == existing().userId &&
+          incoming().createdAt == existing().createdAt;
+        allow delete: if isOwner(userId) && isValidId(videoId);
+      }
+
+      // Architecture Plans subcollection
+      match /architecturePlans/{planId} {
+        allow get: if isOwner(userId) && isValidId(planId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(planId) && isValidArchitecturePlan(incoming());
+        allow update: if isOwner(userId) && isValidId(planId) && isValidArchitecturePlan(incoming()) &&
+          incoming().id == existing().id &&
+          incoming().userId == existing().userId &&
+          incoming().createdAt == existing().createdAt;
+        allow delete: if isOwner(userId) && isValidId(planId);
+      }
+
+      // Session Logs subcollection
+      match /sessionLogs/{logId} {
+        allow get: if isOwner(userId) && isValidId(logId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(logId) && isValidSessionTelemetry(incoming());
+        allow update: if isOwner(userId) && isValidId(logId) && isValidSessionTelemetry(incoming()) &&
+          incoming().id == existing().id &&
+          incoming().userId == existing().userId &&
+          incoming().sessionId == existing().sessionId;
+        allow delete: if isOwner(userId) && isValidId(logId);
+      }
+
+      // Generator Drafts subcollection (for 30-second auto-saves)
+      match /drafts/{draftId} {
+        allow get: if isOwner(userId) && isValidId(draftId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(draftId) && isValidVeoDraftConfig(incoming());
+        allow update: if isOwner(userId) && isValidId(draftId) && isValidVeoDraftConfig(incoming()) &&
+          incoming().id == existing().id &&
+          incoming().userId == existing().userId;
+        allow delete: if isOwner(userId) && isValidId(draftId);
+      }
+    }
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "name": "Remix Cloud AI \u0026 Veo Video Studio",
+  "description": "Scalable cloud processing power, efficient AI model deployment architectures, interactive Veo 3 text-to-video generation, and Cloud Firestore database persistence.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
